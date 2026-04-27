@@ -1,0 +1,21 @@
+# platform-delivery/manifests/analysis-templates/success-rate.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterAnalysisTemplate
+metadata:
+  name: success-rate
+spec:
+  args:
+    - name: namespace
+  metrics:
+    - name: error-rate
+      interval: 30s
+      failureLimit: 2
+      successCondition: "result[0] < 0.05"
+      provider:
+        prometheus:
+          address: http://kube-prometheus-stack-prometheus.monitoring.svc:9090
+          query: |
+            (
+              sum(rate(nginx_ingress_controller_requests{exported_namespace="{{args.namespace}}", status=~"5.."}[1m]))
+              or vector(0)
+            ) / sum(rate(nginx_ingress_controller_requests{exported_namespace="{{args.namespace}}"}[1m]))

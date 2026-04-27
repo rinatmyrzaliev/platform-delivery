@@ -1,0 +1,20 @@
+# platform-delivery/manifests/analysis-templates/latency-p99.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterAnalysisTemplate
+metadata:
+  name: latency-p99
+spec:
+  args:
+    - name: namespace
+  metrics:
+    - name: latency-p99
+      interval: 30s
+      failureLimit: 2
+      successCondition: "result[0] < 500"
+      provider:
+        prometheus:
+          address: http://kube-prometheus-stack-prometheus.monitoring.svc:9090
+          query: |
+            histogram_quantile(0.99,
+              sum(rate(nginx_ingress_controller_request_duration_seconds_bucket{exported_namespace="{{args.namespace}}"}[1m])) by (le)
+            ) * 1000
